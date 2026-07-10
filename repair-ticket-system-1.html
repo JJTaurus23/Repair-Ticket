@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>ระบบใบงานซ่อม</title>
+<meta name="theme-color" content="#14202B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ใบงานซ่อม">
+<link id="manifest-link" rel="manifest" href="">
+<link id="apple-icon-link" rel="apple-touch-icon" href="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --ink:#14202B; --paper:#ECEFEC; --card:#FFFFFF; --line:#D7DCD9;
+    --accent:#0F9E8F; --accent-dark:#0d8a7d; --warm:#E8873A;
+    --muted:#5B655F; --faint:#8A9490;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'Sarabun',sans-serif;}
+  #root{min-height:100vh;}
+  .mono{font-family:'Chakra Petch',sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:0 16px;}
+  /* header */
+  .header{position:sticky;top:0;z-index:30;background:var(--ink);color:#fff;}
+  .header-inner{max-width:920px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .shop-btn{background:none;border:none;text-align:left;cursor:pointer;padding:0;color:inherit;}
+  .shop-name{font-weight:700;font-size:17px;letter-spacing:.2px;}
+  .shop-sub{font-size:11px;color:rgba(255,255,255,.5);}
+  .shop-btn:hover .shop-name{color:#4FD8C7;}
+  .btn-new{display:flex;align-items:center;gap:6px;background:var(--accent);border:none;color:#fff;font-weight:600;font-size:14px;padding:9px 14px;border-radius:10px;cursor:pointer;}
+  .btn-new:hover{background:var(--accent-dark);}
+  .save-flash{font-size:11px;color:#4FD8C7;}
+  .save-error{font-size:11px;color:#F5B0B0;}
+  .offline-banner{background:#E8873A;color:#fff;font-size:12px;text-align:center;padding:6px;}
+  .install-btn{display:flex;align-items:center;gap:5px;background:none;border:1px solid rgba(255,255,255,.3);color:#fff;font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;}
+  /* stats */
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0;}
+  .stat-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
+  .stat-label{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-bottom:6px;}
+  .stat-value{font-size:22px;font-weight:700;line-height:1;}
+  /* search + filters */
+  .search-wrap{position:relative;margin-bottom:14px;}
+  .search-input{width:100%;padding:10px 12px 10px 34px;border-radius:10px;border:1px solid var(--line);font-size:14px;font-family:'Sarabun',sans-serif;outline:none;background:#fff;}
+  .search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(15,158,143,.15);}
+  .search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--faint);font-size:14px;}
+  .filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:18px;}
+  .chip{flex-shrink:0;padding:6px 13px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--line);background:#fff;color:#4B554F;cursor:pointer;white-space:nowrap;}
+  .chip.active{color:#fff;border-color:transparent;}
+  /* ticket grid */
+  .ticket-grid{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media(min-width:640px){.ticket-grid{grid-template-columns:1fr 1fr;}}
+  .ticket-card{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;}
+  .punch{position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:var(--paper);border:1px solid var(--line);}
+  .icon-col{display:flex;align-items:center;justify-content:center;width:52px;border-right:1px dashed var(--line);font-size:20px;}
+  .ticket-body{flex:1;padding:14px;min-width:0;}
+  .ticket-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;}
+  .ticket-no{font-size:13px;font-weight:600;letter-spacing:.3px;}
+  .status-pill{flex-shrink:0;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;}
+  .cust-name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .device-line{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .issue-line{font-size:12px;color:var(--faint);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .footer-row{display:flex;align-items:center;justify-content:space-between;margin-top:11px;padding-top:9px;border-top:1px solid #EEF1EF;}
+  .date-recv{font-size:11px;color:var(--faint);}
+  .actions{display:flex;gap:2px;}
+  .icon-btn{border:none;background:none;padding:6px;border-radius:7px;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;}
+  .icon-btn:hover{background:var(--paper);}
+  .icon-btn.danger{color:#B94A4A;}
+  .icon-btn.danger:hover{background:#FBEAEA;}
+  .next-btn{margin-top:9px;width:100%;display:flex;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:700;padding:7px;border-radius:9px;background:none;cursor:pointer;}
+  .qr-btn{margin-top:7px;width:100%;display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;font-weight:600;padding:7px;border-radius:9px;border:1px dashed var(--line);background:#fff;color:var(--ink);cursor:pointer;}
+  /* empty */
+  .empty{text-align:center;padding:60px 20px;background:#fff;border:1.5px dashed #C6CEC9;border-radius:14px;}
+  .empty-title{font-size:14px;font-weight:600;color:#4B554F;margin:8px 0 4px;}
+  .empty-sub{font-size:12px;color:var(--faint);}
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;padding:16px;z-index:40;}
+  .modal{background:#fff;border-radius:14px;width:100%;max-width:380px;padding:20px;max-height:90vh;overflow-y:auto;}
+  .modal.wide{max-width:520px;}
+  .modal-title{font-weight:700;margin-bottom:12px;}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+  .btn-ghost{padding:8px 14px;border-radius:9px;font-size:13px;border:1px solid var(--line);background:#fff;color:#4B554F;cursor:pointer;}
+  .btn-solid{padding:8px 16px;border-radius:9px;font-size:13px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;}
+  .btn-danger{padding:8px 16px;border-radius:9px;font-size:13px;border:none;background:#D64545;color:#fff;cursor:pointer;}
+  .field{display:block;margin-bottom:10px;}
+  .field-label{font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:'Sarabun',sans-serif;outline:none;background:#fff;}
+  .input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(15,158,143,.15);}
+  textarea.input{resize:vertical;}
+  /* form */
+  .form-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .form-section{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;}
+  .section-label{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  .device-toggle{display:flex;gap:8px;}
+  .device-toggle button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:600;cursor:pointer;color:#4B554F;}
+  .device-toggle button.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .form-btns{display:flex;justify-content:flex-end;gap:8px;padding-top:6px;}
+  /* qr modal */
+  .qr-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0 4px;}
+  .qr-hint{font-size:12px;color:var(--muted);text-align:center;}
+  .qr-warn{font-size:12px;color:var(--warm);background:#FCF0E4;border-radius:9px;padding:10px 12px;line-height:1.5;}
+  /* print / stub */
+  .print-top{position:sticky;top:0;z-index:30;background:var(--ink);color:#fff;}
+  .print-top-inner{max-width:800px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+  .back-link{background:none;border:none;color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;}
+  .print-page{max-width:800px;margin:0 auto;padding:24px 16px;}
+  .stub-pair{display:grid;grid-template-columns:1fr;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  @media(min-width:640px){.stub-pair{grid-template-columns:1fr 1fr;}}
+  .tear-v{display:none;border-left:1px dashed #B7C0BA;}
+  .tear-h{border-top:1px dashed #B7C0BA;}
+  @media(min-width:640px){.tear-v{display:block;} .tear-h{display:none;}}
+  .stub{padding:20px;position:relative;}
+  .stub-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--faint);margin-bottom:6px;}
+  .stub-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+  .stub-shop{font-weight:700;line-height:1.2;}
+  .stub-phone{font-size:11px;color:var(--muted);}
+  .stub-no{font-size:24px;font-weight:700;color:var(--accent);letter-spacing:.5px;margin-bottom:10px;}
+  .stub-row{display:flex;gap:8px;font-size:12px;padding:2px 0;}
+  .stub-k{color:var(--faint);width:96px;flex-shrink:0;}
+  .stub-v{font-weight:500;}
+  .stub-terms{margin-top:14px;padding-top:10px;border-top:1px solid #EEF1EF;font-size:10px;color:var(--faint);line-height:1.5;}
+  .stub-qr{display:flex;justify-content:center;margin-top:12px;}
+  /* tracking view (customer-facing) */
+  .track-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .track-card{background:#fff;border:1px solid var(--line);border-radius:18px;max-width:420px;width:100%;padding:26px;}
+  .track-shop{font-size:12px;color:var(--faint);text-align:center;margin-bottom:2px;}
+  .track-no{text-align:center;font-size:20px;font-weight:700;margin-bottom:18px;}
+  .track-status-big{text-align:center;padding:18px 10px;border-radius:14px;margin-bottom:18px;}
+  .track-status-label{font-size:11px;color:var(--faint);margin-bottom:4px;}
+  .track-status-val{font-size:20px;font-weight:700;}
+  .track-steps{display:flex;justify-content:space-between;margin-bottom:20px;}
+  .track-step{flex:1;text-align:center;position:relative;}
+  .track-dot{width:14px;height:14px;border-radius:50%;background:var(--line);margin:0 auto 6px;}
+  .track-step.done .track-dot{background:var(--accent);}
+  .track-step-label{font-size:9px;color:var(--faint);}
+  .track-step.done .track-step-label{color:var(--ink);font-weight:600;}
+  .track-line{position:absolute;top:6px;left:-50%;width:100%;height:2px;background:var(--line);z-index:-1;}
+  .track-step.done .track-line{background:var(--accent);}
+  .track-info{font-size:13px;color:var(--muted);text-align:center;line-height:1.7;}
+  .track-notfound{text-align:center;color:var(--faint);font-size:13px;padding:30px 0;}
+  .track-note{margin-top:16px;font-size:10px;color:var(--faint);text-align:center;line-height:1.6;border-top:1px solid #EEF1EF;padding-top:10px;}
+  @media print{
+    .no-print{display:none !important;}
+    body{background:#fff !important;}
+    .print-page{padding:0 !important;}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+/* ---------------- PWA bootstrap: icon, manifest, service worker ---------------- */
+(function () {
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function makeIcon(size) {
+    const c = document.createElement("canvas");
+    c.width = size; c.height = size;
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#14202B";
+    roundRect(ctx, 0, 0, size, size, size * 0.22);
+    ctx.fill();
+    ctx.font = (size * 0.52) + "px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("🔧", size / 2, size * 0.56);
+    return c.toDataURL("image/png");
+  }
+
+  try {
+    const icon192 = makeIcon(192);
+    const icon512 = makeIcon(512);
+    const base = window.location.href.split("#")[0];
+    const manifest = {
+      name: "ระบบใบงานซ่อม",
+      short_name: "ใบงานซ่อม",
+      start_url: base,
+      id: base,
+      scope: base,
+      display: "standalone",
+      background_color: "#ECEFEC",
+      theme_color: "#14202B",
+      icons: [
+        { src: icon192, sizes: "192x192", type: "image/png", purpose: "any" },
+        { src: icon192, sizes: "192x192", type: "image/png", purpose: "maskable" },
+        { src: icon512, sizes: "512x512", type: "image/png", purpose: "any" },
+        { src: icon512, sizes: "512x512", type: "image/png", purpose: "maskable" }
+      ]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
+    document.getElementById("manifest-link").setAttribute("href", URL.createObjectURL(manifestBlob));
+    document.getElementById("apple-icon-link").setAttribute("href", icon192);
+    window.__pwaIcon192 = icon192;
+  } catch (e) { /* canvas unavailable, skip icon generation */ }
+
+  if ("serviceWorker" in navigator) {
+    const swSource = [
+      'const CACHE_NAME = "repair-shop-cache-v1";',
+      'const CORE_ASSETS = [',
+      '  "https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap",',
+      '  "https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js",',
+      '  "https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js",',
+      '  "https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js",',
+      '  "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"',
+      '];',
+      'self.addEventListener("install", (event) => {',
+      '  event.waitUntil((async () => {',
+      '    const cache = await caches.open(CACHE_NAME);',
+      '    await Promise.all(CORE_ASSETS.map(async (url) => {',
+      '      try { await cache.add(new Request(url, { mode: "no-cors" })); } catch (e) {}',
+      '    }));',
+      '    self.skipWaiting();',
+      '  })());',
+      '});',
+      'self.addEventListener("activate", (event) => {',
+      '  event.waitUntil((async () => {',
+      '    const keys = await caches.keys();',
+      '    await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));',
+      '    await self.clients.claim();',
+      '  })());',
+      '});',
+      'self.addEventListener("fetch", (event) => {',
+      '  if (event.request.method !== "GET") return;',
+      '  event.respondWith((async () => {',
+      '    const cached = await caches.match(event.request);',
+      '    if (cached) return cached;',
+      '    try {',
+      '      const res = await fetch(event.request);',
+      '      const cache = await caches.open(CACHE_NAME);',
+      '      cache.put(event.request, res.clone());',
+      '      return res;',
+      '    } catch (e) {',
+      '      const fallback = await caches.match(event.request);',
+      '      if (fallback) return fallback;',
+      '      return new Response("Offline", { status: 503, statusText: "Offline" });',
+      '    }',
+      '  })());',
+      '});'
+    ].join("\n");
+    try {
+      const swBlob = new Blob([swSource], { type: "text/javascript" });
+      const swUrl = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swUrl).catch(function () { /* SW registration not supported in this context */ });
+    } catch (e) { /* ignore */ }
+  }
+})();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+
+/* ---------- constants ---------- */
+const STATUSES = [
+  { key: "received",  label: "รับเครื่อง",  color: "#64748B", bg: "#EEF1F3" },
+  { key: "repairing", label: "กำลังซ่อม",    color: "#E8873A", bg: "#FCF0E4" },
+  { key: "waiting",   label: "รออะไหล่",     color: "#7C6FCE", bg: "#EFEDFB" },
+  { key: "done",      label: "ซ่อมเสร็จ",    color: "#0F9E8F", bg: "#E4F5F3" },
+  { key: "returned",  label: "รับคืนแล้ว",   color: "#3FA34D", bg: "#E9F6EC" },
+  { key: "cancelled", label: "ยกเลิก",       color: "#D64545", bg: "#FBEAEA" },
+];
+const TRACK_STEPS = ["received", "repairing", "done", "returned"];
+const DEVICE_TYPES = [
+  { key: "phone", label: "มือถือ", icon: "📱" },
+  { key: "laptop", label: "โน๊ตบุ๊ค", icon: "💻" },
+];
+const SERVICE_TYPES = ["ซ่อมฮาร์ดแวร์", "ลงโปรแกรม/ติดตั้งวินโดว์", "เคลียร์ไวรัส", "กู้ข้อมูล", "เปลี่ยนจอ/แบต", "อื่นๆ"];
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+const todayStr = () => new Date().toISOString().slice(0, 10);
+function fmtDate(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("th-TH", { year: "2-digit", month: "short", day: "numeric" });
+}
+const statusOf = (key) => STATUSES.find((s) => s.key === key) || STATUSES[0];
+
+/* ---------- local offline storage (IndexedDB) ---------- */
+const DB_NAME = "repairShopDB";
+const DB_VERSION = 1;
+function openDB() {
+  return new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) { reject(new Error("no indexeddb")); return; }
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("tickets")) db.createObjectStore("tickets", { keyPath: "id" });
+      if (!db.objectStoreNames.contains("meta")) db.createObjectStore("meta", { keyPath: "key" });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbGetAllTickets() {
+  try {
+    const db = await openDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction("tickets", "readonly");
+      const store = tx.objectStore("tickets");
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch { return []; }
+}
+async function dbPutTicket(t) {
+  try {
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("tickets", "readwrite");
+      tx.objectStore("tickets").put(t);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    return true;
+  } catch { return false; }
+}
+async function dbDeleteTicket(id) {
+  try {
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("tickets", "readwrite");
+      tx.objectStore("tickets").delete(id);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    return true;
+  } catch { return false; }
+}
+async function dbGetMeta(key, fallback) {
+  try {
+    const db = await openDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction("meta", "readonly");
+      const req = tx.objectStore("meta").get(key);
+      req.onsuccess = () => resolve(req.result ? req.result.value : fallback);
+      req.onerror = () => reject(req.error);
+    });
+  } catch { return fallback; }
+}
+async function dbSetMeta(key, value) {
+  try {
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("meta", "readwrite");
+      tx.objectStore("meta").put({ key, value });
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+    return true;
+  } catch { return false; }
+}
+
+/* ---------- self-contained QR snapshot (no server needed — works fully offline) ---------- */
+function encodeSnapshot(obj) {
+  return encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(obj)))));
+}
+function decodeSnapshot(str) {
+  try { return JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(str))))); }
+  catch { return null; }
+}
+function buildTrackUrl(baseUrl, ticket, shop) {
+  const snapshot = {
+    no: ticket.ticketNo,
+    status: ticket.status,
+    device: (ticket.deviceType === "laptop" ? "โน๊ตบุ๊ค" : "มือถือ") + " " + (ticket.brand || "") + " " + (ticket.model || ""),
+    dateReceived: ticket.dateReceived,
+    dueDate: ticket.dueDate || "",
+    updatedAt: ticket.dateUpdated || "",
+    shopName: shop.name,
+    shopPhone: shop.phone,
+  };
+  return baseUrl.replace(/\/$/, "").split("#")[0] + "#track=" + encodeSnapshot(snapshot);
+}
+
+/* ---------- root: route between shop app and public tracking view ---------- */
+function Root() {
+  const [hash, setHash] = useState(window.location.hash || "");
+  const [online, setOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const onHash = () => setHash(window.location.hash || "");
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener("hashchange", onHash);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+  if (hash.startsWith("#track=")) {
+    return <TrackView payload={hash.replace("#track=", "")} />;
+  }
+  return <ShopApp online={online} />;
+}
+
+/* ---------- customer-facing tracking view (decodes snapshot, no network needed) ---------- */
+function TrackView({ payload }) {
+  const data = useMemo(() => decodeSnapshot(payload), [payload]);
+  if (!data) {
+    return (
+      <div className="track-page">
+        <div className="track-card">
+          <div className="track-notfound">อ่านคิวอาร์ไม่สำเร็จ กรุณาสแกนใหม่อีกครั้ง หรือติดต่อร้าน</div>
+        </div>
+      </div>
+    );
+  }
+  const st = statusOf(data.status);
+  const stepIdx = TRACK_STEPS.indexOf(data.status);
+  return (
+    <div className="track-page">
+      <div className="track-card">
+        <div className="track-shop">{data.shopName}{data.shopPhone ? " · โทร " + data.shopPhone : ""}</div>
+        <div className="track-no mono">{data.no}</div>
+
+        <div className="track-status-big" style={{ background: st.bg }}>
+          <div className="track-status-label">สถานะ</div>
+          <div className="track-status-val" style={{ color: st.color }}>{st.label}</div>
+        </div>
+
+        {data.status !== "cancelled" && (
+          <div className="track-steps">
+            {TRACK_STEPS.map((key, i) => {
+              const s = statusOf(key);
+              const done = stepIdx >= i;
+              return (
+                <div key={key} className={"track-step" + (done ? " done" : "")}>
+                  {i > 0 && <div className="track-line" />}
+                  <div className="track-dot" />
+                  <div className="track-step-label">{s.label}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="track-info">
+          {data.device}<br/>
+          รับเครื่อง {fmtDate(data.dateReceived)}
+          {data.dueDate ? <React.Fragment><br/>นัดรับ {fmtDate(data.dueDate)}</React.Fragment> : null}
+          {data.updatedAt ? <React.Fragment><br/>อัปเดตล่าสุด {fmtDate(data.updatedAt)}</React.Fragment> : null}
+        </div>
+        <div className="track-note">
+          หน้านี้แสดงสถานะ ณ เวลาที่พิมพ์/สร้างคิวอาร์นี้ หากต้องการสถานะล่าสุด กรุณาขอคิวอาร์ใหม่จากร้าน หรือติดต่อร้านโดยตรง
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- shop app ---------- */
+function ShopApp({ online }) {
+  const [tickets, setTickets] = useState(null);
+  const [shop, setShop] = useState({ name: "ร้านซ่อมของฉัน", phone: "", address: "", publicUrl: "" });
+  const [view, setView] = useState("dashboard");
+  const [editingId, setEditingId] = useState(null);
+  const [printId, setPrintId] = useState(null);
+  const [qrId, setQrId] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [search, setSearch] = useState("");
+  const [saveFlash, setSaveFlash] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [showShopEdit, setShowShopEdit] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showInstallHelp, setShowInstallHelp] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const list = await dbGetAllTickets();
+      list.sort((a, b) => (b.dateReceived || "").localeCompare(a.dateReceived || "") || (b.id > a.id ? 1 : -1));
+      setTickets(list);
+      const shopMeta = await dbGetMeta("shop", null);
+      if (shopMeta) setShop((s) => ({ ...s, ...shopMeta }));
+      else if (!shop.publicUrl) setShop((s) => ({ ...s, publicUrl: window.location.href.split("#")[0] }));
+    })();
+    const onPrompt = (e) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+  }, []);
+
+  async function saveShop(next) {
+    setShop(next);
+    await dbSetMeta("shop", next);
+  }
+
+  async function nextTicketNo() {
+    const n = (await dbGetMeta("counter", 0)) + 1;
+    await dbSetMeta("counter", n);
+    return "JOB-" + String(n).padStart(4, "0");
+  }
+
+  function flashSave() { setSaveFlash(true); setTimeout(() => setSaveFlash(false), 900); }
+
+  function openNew() { setEditingId(null); setView("form"); }
+  function openEdit(id) { setEditingId(id); setView("form"); }
+  function openPrint(id) { setPrintId(id); setView("print"); }
+  function openQr(id) { setQrId(id); }
+
+  async function upsertTicket(data) {
+    let saved;
+    if (data.id) {
+      saved = { ...data, dateUpdated: todayStr() };
+    } else {
+      const ticketNo = await nextTicketNo();
+      saved = { ...data, id: uid(), ticketNo, dateReceived: data.dateReceived || todayStr(), dateUpdated: todayStr(), status: "received" };
+    }
+    await dbPutTicket(saved);
+    setTickets((prev) => {
+      const exists = prev.some((t) => t.id === saved.id);
+      const next = exists ? prev.map((t) => (t.id === saved.id ? saved : t)) : [saved, ...prev];
+      return next;
+    });
+    flashSave();
+    setView("dashboard");
+  }
+
+  async function setStatus(id, status) {
+    const t = tickets.find((x) => x.id === id);
+    if (!t) return;
+    const updated = { ...t, status, dateUpdated: todayStr() };
+    await dbPutTicket(updated);
+    setTickets((prev) => prev.map((x) => (x.id === id ? updated : x)));
+    flashSave();
+  }
+
+  async function deleteTicket(id) {
+    await dbDeleteTicket(id);
+    setTickets((prev) => prev.filter((t) => t.id !== id));
+    setConfirmDelete(null);
+  }
+
+  function triggerInstall() {
+    if (installPrompt) {
+      installPrompt.prompt();
+      installPrompt.userChoice.finally(() => setInstallPrompt(null));
+    } else {
+      setShowInstallHelp(true);
+    }
+  }
+
+  const stats = useMemo(() => {
+    if (!tickets) return { open: 0, waitingPickup: 0, revenue: 0 };
+    const open = tickets.filter((t) => !["returned", "cancelled"].includes(t.status)).length;
+    const waitingPickup = tickets.filter((t) => t.status === "done").length;
+    const thisMonth = todayStr().slice(0, 7);
+    const revenue = tickets.filter((t) => t.status === "returned" && (t.dateUpdated || "").slice(0, 7) === thisMonth)
+      .reduce((s, t) => s + (Number(t.price) || 0), 0);
+    return { open, waitingPickup, revenue };
+  }, [tickets]);
+
+  const filtered = useMemo(() => {
+    if (!tickets) return [];
+    return tickets.filter((t) => filterStatus === "all" || t.status === filterStatus)
+      .filter((t) => {
+        if (!search.trim()) return true;
+        const q = search.trim().toLowerCase();
+        return [t.ticketNo, t.customerName, t.phone, t.brand, t.model, t.issue].filter(Boolean)
+          .some((f) => String(f).toLowerCase().includes(q));
+      });
+  }, [tickets, filterStatus, search]);
+
+  if (tickets === null) {
+    return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}>กำลังโหลดข้อมูล...</div>;
+  }
+
+  return (
+    <div>
+      {!online && <div className="offline-banner">📴 ออฟไลน์อยู่ — ข้อมูลบันทึกในเครื่องได้ตามปกติ</div>}
+      {view !== "print" && (
+        <div className="header">
+          <div className="header-inner">
+            <button className="shop-btn" onClick={() => setShowShopEdit(true)}>
+              <div className="shop-name mono">{shop.name || "ร้านซ่อมของฉัน"}</div>
+              <div className="shop-sub">ระบบใบงานซ่อม · แตะเพื่อแก้ไขข้อมูลร้าน</div>
+            </button>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {saveFlash && <span className="save-flash">บันทึกแล้ว</span>}
+              <button className="install-btn" onClick={triggerInstall}>⬇ ติดตั้งแอป</button>
+              <button className="btn-new mono" onClick={openNew}>＋ สร้างใบงาน</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {view === "dashboard" && (
+        <div className="wrap" style={{paddingTop:20,paddingBottom:32}}>
+          <div className="stat-grid">
+            <StatCard icon="🔧" label="งานเปิดอยู่" value={stats.open} accent="#0F9E8F" />
+            <StatCard icon="📦" label="รอลูกค้ารับ" value={stats.waitingPickup} accent="#E8873A" />
+            <StatCard icon="📈" label="รายได้เดือนนี้" value={"฿" + stats.revenue.toLocaleString()} accent="#14202B" />
+          </div>
+
+          <div className="search-wrap">
+            <span className="search-icon">🔍</span>
+            <input className="search-input" value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหา: ชื่อ, เบอร์, เลขใบงาน, รุ่น, อาการ..." />
+          </div>
+
+          <div className="filter-row">
+            <button className={"chip" + (filterStatus==="all"?" active":"")} onClick={() => setFilterStatus("all")}
+              style={filterStatus==="all"?{background:"#14202B"}:{}}>ทั้งหมด ({tickets.length})</button>
+            {STATUSES.map((s) => (
+              <button key={s.key} className={"chip" + (filterStatus===s.key?" active":"")} onClick={() => setFilterStatus(s.key)}
+                style={filterStatus===s.key?{background:s.color}:{}}>{s.label}</button>
+            ))}
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="empty">
+              <div style={{fontSize:26}}>🔧</div>
+              <div className="empty-title">{tickets.length ? "ไม่พบใบงานที่ตรงกับตัวกรอง" : "ยังไม่มีใบงานในระบบ"}</div>
+              <div className="empty-sub">{tickets.length ? "ลองเปลี่ยนคำค้นหาหรือตัวกรองสถานะ" : "กด “สร้างใบงาน” ที่มุมขวาบนเพื่อเริ่มรับงานแรก"}</div>
+            </div>
+          ) : (
+            <div className="ticket-grid">
+              {filtered.map((t) => (
+                <TicketCard key={t.id} t={t}
+                  onEdit={() => openEdit(t.id)} onPrint={() => openPrint(t.id)} onQr={() => openQr(t.id)}
+                  onSetStatus={(s) => setStatus(t.id, s)} onDelete={() => setConfirmDelete(t.id)} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {view === "form" && (
+        <TicketForm initial={editingId ? tickets.find((t) => t.id === editingId) : null}
+          onCancel={() => setView("dashboard")} onSave={upsertTicket} />
+      )}
+
+      {view === "print" && (
+        <PrintView ticket={tickets.find((t) => t.id === printId)} shop={shop} onBack={() => setView("dashboard")} />
+      )}
+
+      {qrId && (
+        <QrModal ticket={tickets.find((t) => t.id === qrId)} shop={shop} onClose={() => setQrId(null)} />
+      )}
+
+      {confirmDelete && (
+        <ConfirmModal text="ลบใบงานนี้ถาวร? ข้อมูลจะหายไปและกู้คืนไม่ได้"
+          onCancel={() => setConfirmDelete(null)} onConfirm={() => deleteTicket(confirmDelete)} />
+      )}
+
+      {showShopEdit && (
+        <ShopEditModal shop={shop} onCancel={() => setShowShopEdit(false)}
+          onSave={(s) => { saveShop(s); setShowShopEdit(false); }} />
+      )}
+
+      {showInstallHelp && (
+        <InstallHelpModal onClose={() => setShowInstallHelp(false)} />
+      )}
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, accent }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-label"><span>{icon}</span><span>{label}</span></div>
+      <div className="stat-value mono" style={{ color: accent }}>{value}</div>
+    </div>
+  );
+}
+
+function TicketCard({ t, onEdit, onPrint, onQr, onSetStatus, onDelete }) {
+  const st = statusOf(t.status);
+  const icon = t.deviceType === "laptop" ? "💻" : "📱";
+  const currentIdx = STATUSES.findIndex((s) => s.key === t.status);
+  const nextStatus = currentIdx >= 0 && currentIdx < 4 ? STATUSES[currentIdx + 1] : null;
+  return (
+    <div className="ticket-card">
+      <div className="punch" />
+      <div className="icon-col" style={{ background: st.bg }}>{icon}</div>
+      <div className="ticket-body">
+        <div className="ticket-top">
+          <span className="ticket-no mono">{t.ticketNo}</span>
+          <span className="status-pill" style={{ background: st.bg, color: st.color }}>{st.label}</span>
+        </div>
+        <div className="cust-name">{t.customerName || "ไม่ระบุชื่อ"}</div>
+        <div className="device-line">{t.brand} {t.model}{t.phone ? " · " + t.phone : ""}</div>
+        <div className="issue-line">{t.issue}</div>
+        <div className="footer-row">
+          <div className="date-recv">รับเมื่อ {fmtDate(t.dateReceived)}</div>
+          <div className="actions">
+            <button className="icon-btn" title="แก้ไข" onClick={onEdit}>✏️</button>
+            <button className="icon-btn" title="พิมพ์ใบงาน" onClick={onPrint}>🖨️</button>
+            <button className="icon-btn danger" title="ลบ" onClick={onDelete}>🗑️</button>
+          </div>
+        </div>
+        <button className="qr-btn" onClick={onQr}>▦ คิวอาร์สำหรับลูกค้าติดตามสถานะ</button>
+        {nextStatus && t.status !== "cancelled" && (
+          <button className="next-btn" style={{ border: "1px solid " + nextStatus.color, color: nextStatus.color }}
+            onClick={() => onSetStatus(nextStatus.key)}>เปลี่ยนเป็น {nextStatus.label} ›</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ModalShell({ children, onCancel, wide }) {
+  return (
+    <div className="overlay" onClick={onCancel}>
+      <div className={"modal" + (wide ? " wide" : "")} onClick={(e) => e.stopPropagation()}>{children}</div>
+    </div>
+  );
+}
+
+function ConfirmModal({ text, onCancel, onConfirm }) {
+  return (
+    <ModalShell onCancel={onCancel}>
+      <div style={{ fontSize: 14, marginBottom: 6 }}>{text}</div>
+      <div className="modal-actions">
+        <button className="btn-ghost" onClick={onCancel}>ยกเลิก</button>
+        <button className="btn-danger" onClick={onConfirm}>ลบ</button>
+      </div>
+    </ModalShell>
+  );
+}
+
+function InstallHelpModal({ onClose }) {
+  return (
+    <ModalShell onCancel={onClose} wide>
+      <div className="modal-title mono">วิธีติดตั้งแอปลงหน้าจอหลัก</div>
+      <div style={{fontSize:13,lineHeight:1.8}}>
+        <b>iPhone (Safari):</b> แตะปุ่มแชร์ (□↑) ด้านล่าง แล้วเลือก “Add to Home Screen”<br/><br/>
+        <b>Android (Chrome):</b> แตะเมนู ⋮ มุมขวาบน แล้วเลือก “ติดตั้งแอป” หรือ “Add to Home screen”<br/><br/>
+        <b>คอมพิวเตอร์ (Chrome/Edge):</b> มองหาไอคอนติดตั้ง ⊕ ในแถบที่อยู่เว็บ (address bar)
+      </div>
+      <div className="modal-actions"><button className="btn-ghost" onClick={onClose}>ปิด</button></div>
+    </ModalShell>
+  );
+}
+
+function ShopEditModal({ shop, onCancel, onSave }) {
+  const [s, setS] = useState(shop);
+  return (
+    <ModalShell onCancel={onCancel} wide>
+      <div className="modal-title mono">ข้อมูลร้าน</div>
+      <label className="field"><div className="field-label">ชื่อร้าน</div>
+        <input className="input" value={s.name} onChange={(e) => setS({ ...s, name: e.target.value })} /></label>
+      <label className="field"><div className="field-label">เบอร์โทรร้าน</div>
+        <input className="input" value={s.phone} onChange={(e) => setS({ ...s, phone: e.target.value })} /></label>
+      <label className="field"><div className="field-label">ที่อยู่ร้าน</div>
+        <input className="input" value={s.address} onChange={(e) => setS({ ...s, address: e.target.value })} /></label>
+      <label className="field">
+        <div className="field-label">ลิงก์สาธารณะของหน้านี้ (สำหรับคิวอาร์โค้ด)</div>
+        <input className="input" placeholder="วางลิงก์หลังจากกด Publish/Share หน้านี้ใน Claude"
+          value={s.publicUrl} onChange={(e) => setS({ ...s, publicUrl: e.target.value })} />
+      </label>
+      <div style={{fontSize:11,color:"#8A9490",lineHeight:1.6,marginTop:-2,marginBottom:4}}>
+        ควรใส่ลิงก์หลัง Publish/Share หน้านี้ เพื่อให้คิวอาร์เปิดได้จากมือถือลูกค้า ค่าเริ่มต้นคือลิงก์ของหน้าที่เปิดอยู่ตอนนี้
+      </div>
+      <div className="modal-actions">
+        <button className="btn-ghost" onClick={onCancel}>ยกเลิก</button>
+        <button className="btn-solid" onClick={() => onSave(s)}>บันทึก</button>
+      </div>
+    </ModalShell>
+  );
+}
+
+function QrModal({ ticket, shop, onClose }) {
+  const qrRef = useRef(null);
+  const fullUrl = buildTrackUrl(shop.publicUrl || window.location.href, ticket, shop);
+
+  useEffect(() => {
+    if (qrRef.current) {
+      qrRef.current.innerHTML = "";
+      new QRCode(qrRef.current, { text: fullUrl, width: 168, height: 168, colorDark: "#14202B", colorLight: "#ffffff" });
+    }
+  }, [fullUrl]);
+
+  return (
+    <ModalShell onCancel={onClose}>
+      <div className="modal-title mono">คิวอาร์ติดตามสถานะ — {ticket.ticketNo}</div>
+      <div className="qr-wrap">
+        <div ref={qrRef}></div>
+        <div className="qr-hint">ให้ลูกค้าสแกนเพื่อดูสถานะงานซ่อม (ไม่แสดงเบอร์โทร ราคา หรือรหัสเครื่อง)<br/>คิวอาร์นี้แสดงสถานะ ณ ตอนนี้ — ถ้าสถานะเปลี่ยน ให้เปิดคิวอาร์ใหม่อีกครั้ง</div>
+      </div>
+      <div className="modal-actions"><button className="btn-ghost" onClick={onClose}>ปิด</button></div>
+    </ModalShell>
+  );
+}
+
+function TicketForm({ initial, onCancel, onSave }) {
+  const [f, setF] = useState(initial || {
+    id: null, deviceType: "phone", customerName: "", phone: "", brand: "", model: "",
+    serial: "", passcode: "", serviceType: SERVICE_TYPES[0], issue: "", accessories: "",
+    price: "", deposit: "", dueDate: "", dateReceived: todayStr(), notes: "", status: "received",
+  });
+  const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!f.customerName.trim() || !f.phone.trim()) return;
+    onSave(f);
+  }
+  return (
+    <div className="wrap" style={{paddingTop:20,paddingBottom:32}}>
+      <div className="form-title">
+        <h1 className="mono" style={{fontSize:18,fontWeight:700,margin:0}}>{initial ? ("แก้ไขใบงาน " + initial.ticketNo) : "สร้างใบงานใหม่"}</h1>
+        <button className="icon-btn" onClick={onCancel} style={{fontSize:18}}>✕</button>
+      </div>
+      <form onSubmit={handleSubmit}>
+        <div className="form-section">
+          <div className="section-label">ประเภทอุปกรณ์</div>
+          <div className="device-toggle">
+            {DEVICE_TYPES.map((d) => (
+              <button type="button" key={d.key} className={f.deviceType===d.key?"active":""} onClick={() => set("deviceType", d.key)}>
+                <span>{d.icon}</span> {d.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="form-section">
+          <div className="section-label">ข้อมูลลูกค้า</div>
+          <div className="grid2">
+            <label className="field"><div className="field-label">ชื่อลูกค้า *</div>
+              <input required className="input" value={f.customerName} onChange={(e) => set("customerName", e.target.value)} placeholder="เช่น คุณสมชาย" /></label>
+            <label className="field"><div className="field-label">เบอร์โทร *</div>
+              <input required className="input" value={f.phone} onChange={(e) => set("phone", e.target.value)} placeholder="08x-xxx-xxxx" /></label>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <div className="section-label">ข้อมูลอุปกรณ์</div>
+          <div className="grid2" style={{marginBottom:10}}>
+            <label className="field"><div className="field-label">ยี่ห้อ</div>
+              <input className="input" value={f.brand} onChange={(e) => set("brand", e.target.value)} placeholder="เช่น Apple, Asus" /></label>
+            <label className="field"><div className="field-label">รุ่น</div>
+              <input className="input" value={f.model} onChange={(e) => set("model", e.target.value)} placeholder="เช่น iPhone 13, Vivobook 14" /></label>
+          </div>
+          <div className="grid2">
+            <label className="field"><div className="field-label">S/N หรือ IMEI</div>
+              <input className="input" value={f.serial} onChange={(e) => set("serial", e.target.value)} /></label>
+            <label className="field"><div className="field-label">รหัสผ่านเครื่อง (ถ้ามี)</div>
+              <input className="input" value={f.passcode} onChange={(e) => set("passcode", e.target.value)} /></label>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <div className="section-label">งานที่รับ</div>
+          <label className="field"><div className="field-label">ประเภทงาน</div>
+            <select className="input" value={f.serviceType} onChange={(e) => set("serviceType", e.target.value)}>
+              {SERVICE_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+          <label className="field"><div className="field-label">อาการ / ปัญหาที่แจ้ง</div>
+            <textarea className="input" rows="2" value={f.issue} onChange={(e) => set("issue", e.target.value)} placeholder="เช่น จอแตก เปิดไม่ติด แบตเสื่อมเร็ว" /></label>
+          <label className="field"><div className="field-label">อุปกรณ์ที่รับมาด้วย</div>
+            <input className="input" value={f.accessories} onChange={(e) => set("accessories", e.target.value)} placeholder="เช่น สายชาร์จ, เคส, ที่ชาร์จ" /></label>
+        </div>
+
+        <div className="form-section">
+          <div className="section-label">ราคาและกำหนดนัด</div>
+          <div className="grid3">
+            <label className="field"><div className="field-label">ราคาประเมิน (฿)</div>
+              <input className="input" inputMode="numeric" value={f.price} onChange={(e) => set("price", e.target.value)} /></label>
+            <label className="field"><div className="field-label">มัดจำ (฿)</div>
+              <input className="input" inputMode="numeric" value={f.deposit} onChange={(e) => set("deposit", e.target.value)} /></label>
+            <label className="field"><div className="field-label">นัดรับ</div>
+              <input className="input" type="date" value={f.dueDate} onChange={(e) => set("dueDate", e.target.value)} /></label>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <div className="section-label">หมายเหตุ</div>
+          <textarea className="input" rows="2" value={f.notes} onChange={(e) => set("notes", e.target.value)} placeholder="บันทึกเพิ่มเติมสำหรับช่าง" />
+        </div>
+
+        <div className="form-btns">
+          <button type="button" className="btn-ghost" onClick={onCancel}>ยกเลิก</button>
+          <button type="submit" className="btn-solid mono">{initial ? "บันทึกการแก้ไข" : "สร้างใบงาน"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function PrintView({ ticket, shop, onBack }) {
+  if (!ticket) return null;
+  const st = statusOf(ticket.status);
+  return (
+    <div>
+      <div className="print-top no-print">
+        <div className="print-top-inner">
+          <button className="back-link" onClick={onBack}>← กลับ</button>
+          <button className="btn-new mono" onClick={() => window.print()}>🖨️ พิมพ์ใบงาน</button>
+        </div>
+      </div>
+      <div className="print-page">
+        <div className="stub-pair">
+          <Stub ticket={ticket} shop={shop} st={st} label="ส่วนเก็บที่ร้าน" />
+          <div className="tear-v"></div>
+          <div className="tear-h"></div>
+          <Stub ticket={ticket} shop={shop} st={st} label="ส่วนมอบให้ลูกค้า" customerFacing />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stub({ ticket, shop, st, label, customerFacing }) {
+  const qrRef = useRef(null);
+  const fullUrl = buildTrackUrl(shop.publicUrl || window.location.href, ticket, shop);
+  useEffect(() => {
+    if (customerFacing && qrRef.current) {
+      qrRef.current.innerHTML = "";
+      new QRCode(qrRef.current, { text: fullUrl, width: 110, height: 110, colorDark: "#14202B", colorLight: "#ffffff" });
+    }
+  }, [customerFacing, fullUrl]);
+
+  return (
+    <div className="stub">
+      <div className="stub-label">{label}</div>
+      <div className="stub-head">
+        <div>
+          <div className="stub-shop mono">{shop.name}</div>
+          {shop.phone && <div className="stub-phone">โทร {shop.phone}</div>}
+        </div>
+        <span className="status-pill" style={{ background: st.bg, color: st.color }}>{st.label}</span>
+      </div>
+      <div className="stub-no mono">{ticket.ticketNo}</div>
+      <Row k="วันรับเครื่อง" v={fmtDate(ticket.dateReceived)} />
+      <Row k="ลูกค้า" v={ticket.customerName + (ticket.phone ? " · " + ticket.phone : "")} />
+      <Row k="อุปกรณ์" v={(ticket.deviceType === "laptop" ? "โน๊ตบุ๊ค" : "มือถือ") + " " + (ticket.brand||"") + " " + (ticket.model||"")} />
+      {ticket.serial && <Row k="S/N หรือ IMEI" v={ticket.serial} />}
+      <Row k="ประเภทงาน" v={ticket.serviceType} />
+      <Row k="อาการ" v={ticket.issue || "-"} />
+      {ticket.accessories && <Row k="อุปกรณ์แนบมาด้วย" v={ticket.accessories} />}
+      {!customerFacing && ticket.passcode && <Row k="รหัสผ่านเครื่อง" v={ticket.passcode} />}
+      <Row k="ราคาประเมิน" v={ticket.price ? ("฿" + Number(ticket.price).toLocaleString()) : "-"} />
+      {ticket.deposit && <Row k="มัดจำ" v={"฿" + Number(ticket.deposit).toLocaleString()} />}
+      {ticket.dueDate && <Row k="นัดรับ" v={fmtDate(ticket.dueDate)} />}
+      {!customerFacing && ticket.notes && <Row k="หมายเหตุช่าง" v={ticket.notes} />}
+
+      {customerFacing && (
+        <div className="stub-qr"><div ref={qrRef}></div></div>
+      )}
+
+      <div className="stub-terms">
+        กรุณานำใบนี้มาเป็นหลักฐานในการรับเครื่องคืน ร้านไม่รับผิดชอบข้อมูลในเครื่องที่สูญหาย กรุณาสำรองข้อมูลก่อนนำมาซ่อมทุกครั้ง
+        {customerFacing ? " · สแกนคิวอาร์เพื่อดูสถานะ" : ""}
+      </div>
+    </div>
+  );
+}
+
+function Row({ k, v }) {
+  return <div className="stub-row"><span className="stub-k">{k}</span><span className="stub-v">{v}</span></div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Root />);
+</script>
+</body>
+</html>
